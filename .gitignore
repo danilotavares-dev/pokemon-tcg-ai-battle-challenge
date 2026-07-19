@@ -1,0 +1,16 @@
+# Ambientes Virtuais e Python
+__pycache__/
+venv/
+env/
+.env
+
+# Pacotes de Submissão
+*.tar.gz
+
+# Dados do Kaggle e PDFs
+*.csv
+*.pdf
+metadata/
+
+# Arquivos temporários do Jupyter Notebook
+.ipynb_checkpoints/
