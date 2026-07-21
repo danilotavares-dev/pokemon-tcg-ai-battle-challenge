@@ -1,20 +1,13 @@
-# tar -czvf submission.tar.gz main.py deck.csv pokedex.py
 
 import random
 
+from deck import DECK
 from pokedex import get_pokemon_attack_cost
+from calculator import calculate_score
 
 def agent(obs_dict: dict, config_dict: dict) -> list[int]:
     if obs_dict.get('select') is None:
-        return (
-            [35] * 4 + 
-            [101] * 4 + 
-            [47] * 4 + 
-            [50] * 4 + 
-            [1086] * 4 +
-            [1079] * 4 +
-            [3] * 36 
-        )
+        return DECK
 
     try:
         # Contagem de opções disponíveis
@@ -26,38 +19,45 @@ def agent(obs_dict: dict, config_dict: dict) -> list[int]:
 
         # Meu PlayerIndex na partida
         my_index = obs_dict['current']['yourIndex']
-        enemy_index = 1 - my_index
+        #enemy_index = 1 - my_index
 
         if len(obs_dict['current']['players'][my_index]['active']) > 0:
             id_my_pokemon_active = obs_dict['current']['players'][my_index]['active'][0]['id']
             target_energies = get_pokemon_attack_cost(id_my_pokemon_active)
-            current_energies = len(obs_dict['current']['players'][my_index]['active'][0]['energyCards'])
+            active_pokemon = obs_dict['current']['players'][my_index]['active'][0]
+            current_energies = len(active_pokemon.get('energyCards', []))
         else:
             target_energies = 0
             current_energies = 0
+
+        state = {
+            "current_energies": current_energies,
+            "target_energies": target_energies,
+            "options": obs_dict["select"]["option"],
+            "obs": obs_dict,
+            "can_attack": current_energies >= target_energies,
+            "can_evolve": any(o["type"] == 9 for o in obs_dict["select"]["option"]),
+            "can_play_basic": any(o["type"] == 7 for o in obs_dict["select"]["option"]),
+            "bench_full": len(obs_dict["current"]["players"][my_index]["bench"]) == 5,
+        }
 
         best_score = -999999 
         best_option_index = 0
 
         for index, option in enumerate(obs_dict["select"]["option"]):
-            score = 0
-            
-            if option["type"] == 8 and option.get("inPlayArea") == 4:
-                
-                if current_energies >= target_energies:
-                    score = -1000
-                else:
-                    score = 500
+            score = calculate_score(option, state)
 
             if score > best_score:
                 best_score = score
                 best_option_index = index 
+
         if safe_max == 1: 
             return [best_option_index]
         
         return random.sample(list(range(options_count)), safe_max)
             
-    except Exception:
+    except Exception as e:
+        print(f"FATAL CRASH: {e}")
         return [0]
     
 
